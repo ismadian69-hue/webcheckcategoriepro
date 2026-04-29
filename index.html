@@ -3,21 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Domain Reputation Checker V4</title>
+<title>Domain Checker PRO V2</title>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
 
 body{
 font-family:Arial,sans-serif;
 background:linear-gradient(135deg,#020617,#0f172a,#111827);
-color:#fff;
+color:white;
 padding:30px;
 min-height:100vh;
 }
 
 .container{
-max-width:1500px;
+max-width:1400px;
 margin:auto;
 }
 
@@ -29,18 +33,18 @@ font-size:34px;
 
 .panel{
 background:rgba(255,255,255,.05);
-padding:22px;
-border-radius:22px;
+padding:20px;
+border-radius:20px;
 }
 
 textarea{
 width:100%;
 height:180px;
 background:#020617;
-color:#fff;
+color:white;
 border:none;
 padding:15px;
-border-radius:14px;
+border-radius:12px;
 resize:none;
 font-size:15px;
 }
@@ -58,11 +62,17 @@ border:none;
 border-radius:12px;
 cursor:pointer;
 font-weight:bold;
-color:#fff;
 }
 
-.primary{background:#3b82f6}
-.secondary{background:#1e293b}
+.primary{
+background:#3b82f6;
+color:white;
+}
+
+.secondary{
+background:#1e293b;
+color:white;
+}
 
 input{
 margin-top:15px;
@@ -71,7 +81,7 @@ padding:12px;
 border:none;
 border-radius:12px;
 background:#020617;
-color:#fff;
+color:white;
 }
 
 .stats{
@@ -83,8 +93,8 @@ margin-top:18px;
 
 .card{
 background:#111827;
-padding:16px;
-border-radius:14px;
+padding:15px;
+border-radius:12px;
 }
 
 .card span{
@@ -104,7 +114,7 @@ margin-top:20px;
 
 table{
 width:100%;
-min-width:1300px;
+min-width:1000px;
 border-collapse:collapse;
 }
 
@@ -127,8 +137,15 @@ color:#38bdf8;
 font-family:monospace;
 }
 
-.online{color:#22c55e;font-weight:bold}
-.offline{color:#ef4444;font-weight:bold}
+.online{
+color:#22c55e;
+font-weight:bold;
+}
+
+.offline{
+color:#ef4444;
+font-weight:bold;
+}
 
 .badge{
 background:#1e293b;
@@ -136,12 +153,6 @@ padding:6px 10px;
 border-radius:10px;
 display:inline-block;
 }
-
-.safe{color:#22c55e;font-weight:bold}
-.good{color:#4ade80;font-weight:bold}
-.neutral{color:#facc15;font-weight:bold}
-.warn{color:#fb923c;font-weight:bold}
-.danger{color:#ef4444;font-weight:bold}
 
 .loader{
 display:none;
@@ -162,11 +173,11 @@ font-size:13px;
 
 <div class="container">
 
-<h1>🛡️ Domain Reputation Checker V4</h1>
+<h1>🌐 Domain Checker PRO V2</h1>
 
 <div class="panel">
 
-<textarea id="domains" placeholder="google.com&#10;github.com&#10;suspicious-site.xyz"></textarea>
+<textarea id="domains" placeholder="google.com&#10;facebook.com&#10;youtube.com"></textarea>
 
 <div class="actions">
 <button class="primary" onclick="startCheck()">Check</button>
@@ -174,7 +185,7 @@ font-size:13px;
 <button class="secondary" onclick="downloadCSV()">CSV</button>
 </div>
 
-<div class="loader" id="loader">Scanning domains...</div>
+<div class="loader" id="loader">Checking domains...</div>
 
 <input id="search" placeholder="Search..." onkeyup="filterRows()">
 
@@ -191,18 +202,19 @@ font-size:13px;
 </div>
 
 <div class="card">
-<span>Safe</span>
-<strong id="safeCount">0</strong>
+<span>Offline</span>
+<strong id="offlineCount">0</strong>
 </div>
 
 <div class="card">
-<span>Dangerous</span>
-<strong id="dangerCount">0</strong>
+<span>Categories</span>
+<strong id="catCount">0</strong>
 </div>
 
 </div>
 
 <div class="table-wrap">
+
 <table>
 <thead>
 <tr>
@@ -210,14 +222,14 @@ font-size:13px;
 <th>Status</th>
 <th>Category</th>
 <th>SSL</th>
-<th>Score</th>
-<th>Reputation</th>
 <th>Title</th>
 </tr>
 </thead>
 
 <tbody id="results"></tbody>
+
 </table>
+
 </div>
 
 </div>
@@ -239,31 +251,32 @@ return domains.value
 }
 
 async function checkDomain(domain){
+
 try{
+
 let res=await fetch('/api/check?domain='+encodeURIComponent(domain));
 let data=await res.json();
 
 return{
-domain,
-status:data.status||"Offline",
-category:data.category||"-",
-ssl:data.ssl||"-",
-score:data.score||0,
-reputation:data.reputation||"Unknown",
-title:data.title||"-"
+domain:domain,
+status:data.status || "Offline",
+category:data.category || "-",
+ssl:data.ssl || "-",
+title:data.title || "-"
 };
 
 }catch{
+
 return{
-domain,
+domain:domain,
 status:"Offline",
 category:"-",
 ssl:"-",
-score:0,
-reputation:"Unknown",
 title:"-"
 };
+
 }
+
 }
 
 async function startCheck(){
@@ -289,32 +302,25 @@ results.innerHTML+=makeRow(row);
 
 updateStats();
 
-await delay(180);
+await delay(250);
+
 }
 
 loader.style.display="none";
 }
 
-function repClass(rep){
-if(rep==="Safe") return "safe";
-if(rep==="Trustworthy") return "good";
-if(rep==="Neutral") return "neutral";
-if(rep==="Suspicious") return "warn";
-return "danger";
-}
-
 function makeRow(r){
+
 return `
 <tr>
 <td class="domain">${r.domain}</td>
 <td class="${r.status==='Online'?'online':'offline'}">${r.status}</td>
 <td><span class="badge">${r.category}</span></td>
 <td>${r.ssl}</td>
-<td>${r.score}/100</td>
-<td class="${repClass(r.reputation)}">${r.reputation}</td>
 <td>${r.title}</td>
 </tr>
 `;
+
 }
 
 function updateStats(){
@@ -324,19 +330,22 @@ totalCount.textContent=resultsData.length;
 onlineCount.textContent=
 resultsData.filter(x=>x.status==="Online").length;
 
-safeCount.textContent=
-resultsData.filter(x=>x.reputation==="Safe"||x.reputation==="Trustworthy").length;
+offlineCount.textContent=
+resultsData.filter(x=>x.status!=="Online").length;
 
-dangerCount.textContent=
-resultsData.filter(x=>x.reputation==="Dangerous").length;
+catCount.textContent=
+[...new Set(resultsData.map(x=>x.category))].length;
+
 }
 
 function clearAll(){
+
 domains.value="";
 search.value="";
 results.innerHTML="";
 resultsData=[];
 updateStats();
+
 }
 
 function filterRows(){
@@ -349,21 +358,22 @@ rows.forEach((row,i)=>{
 
 let r=resultsData[i];
 
-let txt=(r.domain+" "+r.category+" "+r.reputation+" "+r.title).toLowerCase();
+let txt=(r.domain+" "+r.status+" "+r.category+" "+r.title).toLowerCase();
 
-row.style.display=txt.includes(q)?"":"none";
+row.style.display=txt.includes(q) ? "" : "none";
 
 });
+
 }
 
 function downloadCSV(){
 
 if(resultsData.length===0) return;
 
-let csv="Domain,Status,Category,SSL,Score,Reputation,Title\n";
+let csv="Domain,Status,Category,SSL,Title\n";
 
 resultsData.forEach(r=>{
-csv+=`${r.domain},${r.status},${r.category},${r.ssl},${r.score},${r.reputation},"${r.title}"\n`;
+csv+=`${r.domain},${r.status},${r.category},${r.ssl},"${r.title}"\n`;
 });
 
 let blob=new Blob([csv],{type:'text/csv'});
@@ -371,10 +381,11 @@ let url=URL.createObjectURL(blob);
 
 let a=document.createElement("a");
 a.href=url;
-a.download="reputation-results.csv";
+a.download="domains.csv";
 a.click();
 
 URL.revokeObjectURL(url);
+
 }
 
 function delay(ms){
