@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Domain Checker PRO</title>
+<title>Domain Checker PRO V2</title>
 
 <style>
 *{
@@ -13,7 +13,7 @@ box-sizing:border-box;
 }
 
 body{
-font-family:Arial, sans-serif;
+font-family:Arial,sans-serif;
 background:linear-gradient(135deg,#020617,#0f172a,#111827);
 color:white;
 padding:30px;
@@ -21,7 +21,7 @@ min-height:100vh;
 }
 
 .container{
-max-width:1200px;
+max-width:1400px;
 margin:auto;
 }
 
@@ -46,6 +46,7 @@ border:none;
 padding:15px;
 border-radius:12px;
 resize:none;
+font-size:15px;
 }
 
 .actions{
@@ -106,10 +107,15 @@ display:block;
 font-size:24px;
 }
 
+.table-wrap{
+overflow:auto;
+margin-top:20px;
+}
+
 table{
 width:100%;
+min-width:1000px;
 border-collapse:collapse;
-margin-top:20px;
 }
 
 th,td{
@@ -126,30 +132,31 @@ tr:hover{
 background:rgba(59,130,246,.08);
 }
 
-.success{
+.domain{
+color:#38bdf8;
+font-family:monospace;
+}
+
+.online{
 color:#22c55e;
 font-weight:bold;
 }
 
-.error{
+.offline{
 color:#ef4444;
 font-weight:bold;
-}
-
-.domain{
-color:#38bdf8;
-font-family:monospace;
 }
 
 .badge{
 background:#1e293b;
 padding:6px 10px;
 border-radius:10px;
+display:inline-block;
 }
 
 .loader{
-margin-top:15px;
 display:none;
+margin-top:15px;
 color:#60a5fa;
 }
 
@@ -166,7 +173,7 @@ font-size:13px;
 
 <div class="container">
 
-<h1>🌐 Domain Checker PRO</h1>
+<h1>🌐 Domain Checker PRO V2</h1>
 
 <div class="panel">
 
@@ -178,31 +185,35 @@ font-size:13px;
 <button class="secondary" onclick="downloadCSV()">CSV</button>
 </div>
 
-<div class="loader" id="loader">Checking...</div>
+<div class="loader" id="loader">Checking domains...</div>
 
 <input id="search" placeholder="Search..." onkeyup="filterRows()">
 
 <div class="stats">
+
 <div class="card">
 <span>Total</span>
 <strong id="totalCount">0</strong>
 </div>
 
 <div class="card">
-<span>Success</span>
-<strong id="successCount">0</strong>
+<span>Online</span>
+<strong id="onlineCount">0</strong>
 </div>
 
 <div class="card">
-<span>Error</span>
-<strong id="errorCount">0</strong>
+<span>Offline</span>
+<strong id="offlineCount">0</strong>
 </div>
 
 <div class="card">
 <span>Categories</span>
 <strong id="catCount">0</strong>
 </div>
+
 </div>
+
+<div class="table-wrap">
 
 <table>
 <thead>
@@ -210,11 +221,16 @@ font-size:13px;
 <th>Domain</th>
 <th>Status</th>
 <th>Category</th>
+<th>SSL</th>
+<th>Title</th>
 </tr>
 </thead>
 
 <tbody id="results"></tbody>
+
 </table>
+
+</div>
 
 </div>
 
@@ -235,23 +251,32 @@ return domains.value
 }
 
 async function checkDomain(domain){
+
 try{
+
 let res=await fetch('/api/check?domain='+encodeURIComponent(domain));
 let data=await res.json();
 
 return{
 domain:domain,
-status:data.status || "Error",
-category:data.category || "-"
+status:data.status || "Offline",
+category:data.category || "-",
+ssl:data.ssl || "-",
+title:data.title || "-"
 };
 
 }catch{
+
 return{
 domain:domain,
-status:"Error",
-category:"-"
+status:"Offline",
+category:"-",
+ssl:"-",
+title:"-"
 };
+
 }
+
 }
 
 async function startCheck(){
@@ -259,12 +284,12 @@ async function startCheck(){
 let list=parseDomains();
 
 if(list.length===0){
-alert("Enter domains");
+alert("Enter domains first");
 return;
 }
 
-results.innerHTML="";
 resultsData=[];
+results.innerHTML="";
 loader.style.display="block";
 
 for(let d of list){
@@ -273,39 +298,54 @@ let row=await checkDomain(d);
 
 resultsData.push(row);
 
-results.innerHTML+=`
-<tr>
-<td class="domain">${row.domain}</td>
-<td class="${row.status==='Success'?'success':'error'}">${row.status}</td>
-<td><span class="badge">${row.category}</span></td>
-</tr>
-`;
+results.innerHTML+=makeRow(row);
 
 updateStats();
 
 await delay(250);
+
 }
 
 loader.style.display="none";
+}
+
+function makeRow(r){
+
+return `
+<tr>
+<td class="domain">${r.domain}</td>
+<td class="${r.status==='Online'?'online':'offline'}">${r.status}</td>
+<td><span class="badge">${r.category}</span></td>
+<td>${r.ssl}</td>
+<td>${r.title}</td>
+</tr>
+`;
+
 }
 
 function updateStats(){
 
 totalCount.textContent=resultsData.length;
 
-successCount.textContent=resultsData.filter(x=>x.status==="Success").length;
+onlineCount.textContent=
+resultsData.filter(x=>x.status==="Online").length;
 
-errorCount.textContent=resultsData.filter(x=>x.status==="Error").length;
+offlineCount.textContent=
+resultsData.filter(x=>x.status!=="Online").length;
 
-catCount.textContent=[...new Set(resultsData.map(x=>x.category))].length;
+catCount.textContent=
+[...new Set(resultsData.map(x=>x.category))].length;
+
 }
 
 function clearAll(){
+
 domains.value="";
 search.value="";
 results.innerHTML="";
 resultsData=[];
 updateStats();
+
 }
 
 function filterRows(){
@@ -318,32 +358,34 @@ rows.forEach((row,i)=>{
 
 let r=resultsData[i];
 
-let txt=(r.domain+" "+r.status+" "+r.category).toLowerCase();
+let txt=(r.domain+" "+r.status+" "+r.category+" "+r.title).toLowerCase();
 
-row.style.display=txt.includes(q)?"":"none";
+row.style.display=txt.includes(q) ? "" : "none";
 
 });
+
 }
 
 function downloadCSV(){
 
 if(resultsData.length===0) return;
 
-let csv="Domain,Status,Category\n";
+let csv="Domain,Status,Category,SSL,Title\n";
 
 resultsData.forEach(r=>{
-csv+=`${r.domain},${r.status},${r.category}\n`;
+csv+=`${r.domain},${r.status},${r.category},${r.ssl},"${r.title}"\n`;
 });
 
 let blob=new Blob([csv],{type:'text/csv'});
 let url=URL.createObjectURL(blob);
 
-let a=document.createElement('a');
+let a=document.createElement("a");
 a.href=url;
 a.download="domains.csv";
 a.click();
 
 URL.revokeObjectURL(url);
+
 }
 
 function delay(ms){
