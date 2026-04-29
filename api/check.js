@@ -7,7 +7,9 @@ export default async function handler(req, res) {
         status: "Error",
         category: "-",
         ssl: "-",
-        title: "-"
+        title: "-",
+        score: 0,
+        reputation: "Unknown"
       });
     }
 
@@ -44,7 +46,7 @@ export default async function handler(req, res) {
         title = match[1]
           .replace(/\s+/g, " ")
           .trim()
-          .slice(0, 60);
+          .slice(0, 70);
       }
 
     } catch (e) {
@@ -56,135 +58,145 @@ export default async function handler(req, res) {
     const d = cleanDomain;
     const t = title.toLowerCase();
 
+    /* CATEGORY ENGINE */
+
     if (
       d.includes("google") ||
       d.includes("chrome") ||
-      d.includes("android") ||
-      d.includes("about.google") ||
+      d.includes("bing") ||
       t.includes("google")
-    ) {
-      category = "Search Engine";
-    }
+    ) category = "Search Engine";
 
     else if (
       d.includes("facebook") ||
       d.includes("instagram") ||
       d.includes("twitter") ||
       d.includes("x.com") ||
-      d.includes("t.co") ||
       d.includes("linkedin") ||
-      d.includes("snapchat") ||
-      t.includes("twitter")
-    ) {
-      category = "Social Media";
-    }
+      d.includes("t.co")
+    ) category = "Social Media";
 
     else if (
       d.includes("youtube") ||
       d.includes("netflix") ||
       d.includes("spotify") ||
-      d.includes("twitch") ||
-      d.includes("hulu")
-    ) {
-      category = "Streaming";
-    }
+      d.includes("twitch")
+    ) category = "Streaming";
 
     else if (
       d.includes("amazon") ||
       d.includes("ebay") ||
       d.includes("shop") ||
-      d.includes("aliexpress") ||
       d.includes("etsy")
-    ) {
-      category = "Ecommerce";
-    }
+    ) category = "Ecommerce";
 
     else if (
       d.includes("github") ||
       d.includes("gitlab") ||
-      d.includes("bitbucket") ||
       d.includes("stackoverflow")
-    ) {
-      category = "Developer";
-    }
+    ) category = "Developer";
 
     else if (
-      d.includes("mediafire") ||
       d.includes("dropbox") ||
+      d.includes("mediafire") ||
       d.includes("mega") ||
-      d.includes("drive.google") ||
-      d.includes("onedrive")
-    ) {
-      category = "Cloud Storage";
-    }
+      d.includes("drive")
+    ) category = "Cloud Storage";
 
     else if (
       d.includes("reuters") ||
       d.includes("cnn") ||
       d.includes("bbc") ||
-      d.includes("nytimes") ||
       d.includes("news")
-    ) {
-      category = "News";
-    }
+    ) category = "News";
 
     else if (
       d.includes("bank") ||
-      d.includes("visa") ||
-      d.includes("mastercard") ||
-      d.includes("paypal")
-    ) {
-      category = "Banking";
-    }
+      d.includes("paypal") ||
+      d.includes("visa")
+    ) category = "Banking";
 
     else if (
       d.includes("casino") ||
       d.includes("bet") ||
       d.includes("poker")
-    ) {
-      category = "Gambling";
-    }
+    ) category = "Gambling";
 
     else if (
       d.includes("crypto") ||
-      d.includes("binance") ||
       d.includes("coinbase") ||
-      d.includes("blockchain")
-    ) {
-      category = "Crypto";
-    }
+      d.includes("binance")
+    ) category = "Crypto";
 
     else if (
-      d.includes(".gov") ||
-      d.includes("gov.")
-    ) {
-      category = "Government";
-    }
-
-    else if (
-      d.includes(".edu") ||
-      d.includes("edu.")
-    ) {
-      category = "Education";
-    }
+      d.includes("design") ||
+      d.includes("studio") ||
+      d.includes("agency")
+    ) category = "Design";
 
     else if (
       d.includes("ai") ||
-      d.includes("openai") ||
-      d.includes("chatgpt")
-    ) {
-      category = "AI";
-    }
+      d.includes("openai")
+    ) category = "AI";
 
-    else {
-      category = "Website";
-    }
+    else if (
+      d.includes("business") ||
+      d.includes("corp") ||
+      d.includes("company")
+    ) category = "Business";
+
+    else category = "Website";
+
+    /* REPUTATION ENGINE */
+
+    let score = 50;
+
+    if (status === "Online") score += 20;
+    if (ssl === "Yes") score += 10;
+    if (title !== "-") score += 10;
+
+    if (
+      d.endsWith(".com") ||
+      d.endsWith(".org") ||
+      d.endsWith(".net")
+    ) score += 5;
+
+    if (
+      d.includes("google") ||
+      d.includes("facebook") ||
+      d.includes("amazon") ||
+      d.includes("github")
+    ) score += 10;
+
+    if (
+      d.includes("free-money") ||
+      d.includes("hack") ||
+      d.includes("casino") ||
+      d.includes("xxx")
+    ) score -= 30;
+
+    if (d.length > 28) score -= 10;
+
+    if (/[0-9]{4,}/.test(d)) score -= 15;
+
+    if (score > 100) score = 100;
+    if (score < 0) score = 0;
+
+    let reputation = "Unknown";
+
+    if (score >= 90) reputation = "Safe";
+    else if (score >= 75) reputation = "Trustworthy";
+    else if (score >= 55) reputation = "Neutral";
+    else if (score >= 35) reputation = "Suspicious";
+    else reputation = "Dangerous";
 
     return res.status(200).json({
       status,
       category,
       ssl,
-      title
+      title,
+      score,
+      reputation
     });
 
   } catch (error) {
@@ -192,7 +204,9 @@ export default async function handler(req, res) {
       status: "Error",
       category: "-",
       ssl: "-",
-      title: "-"
+      title: "-",
+      score: 0,
+      reputation: "Unknown"
     });
   }
 }
