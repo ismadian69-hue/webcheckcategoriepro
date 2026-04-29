@@ -1,1 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Domain Checker PRO</title>
 
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+font-family:Arial, sans-serif;
+background:linear-gradient(135deg,#020617,#0f172a,#111827);
+color:white;
+padding:30px;
+min-height:100vh;
+}
+
+.container{
+max-width:1200px;
+margin:auto;
+}
+
+h1{
+text-align:center;
+margin-bottom:25px;
+font-size:34px;
+}
+
+.panel{
+background:rgba(255,255,255,.05);
+padding:20px;
+border-radius:20px;
+}
+
+textarea{
+width:100%;
+height:180px;
+background:#020617;
+color:white;
+border:none;
+padding:15px;
+border-radius:12px;
+resize:none;
+}
+
+.actions{
+margin-top:15px;
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+}
+
+button{
+padding:12px 18px;
+border:none;
+border-radius:12px;
+cursor:pointer;
+font-weight:bold;
+}
+
+.primary{
+background:#3b82f6;
+color:white;
+}
+
+.secondary{
+background:#1e293b;
+color:white;
+}
+
+input{
+margin-top:15px;
+width:100%;
+padding:12px;
+border:none;
+border-radius:12px;
+background:#020617;
+color:white;
+}
+
+.stats{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+gap:12px;
+margin-top:18px;
+}
+
+.card{
+background:#111827;
+padding:15px;
+border-radius:12px;
+}
+
+.card span{
+font-size:13px;
+color:#94a3b8;
+display:block;
+}
+
+.card strong{
+font-size:24px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th,td{
+padding:14px;
+text-align:left;
+border-bottom:1px solid rgba(255,255,255,.05);
+}
+
+th{
+color:#94a3b8;
+}
+
+tr:hover{
+background:rgba(59,130,246,.08);
+}
+
+.success{
+color:#22c55e;
+font-weight:bold;
+}
+
+.error{
+color:#ef4444;
+font-weight:bold;
+}
+
+.domain{
+color:#38bdf8;
+font-family:monospace;
+}
+
+.badge{
+background:#1e293b;
+padding:6px 10px;
+border-radius:10px;
+}
+
+.loader{
+margin-top:15px;
+display:none;
+color:#60a5fa;
+}
+
+.footer{
+text-align:center;
+margin-top:20px;
+color:#64748b;
+font-size:13px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🌐 Domain Checker PRO</h1>
+
+<div class="panel">
+
+<textarea id="domains" placeholder="google.com&#10;facebook.com&#10;youtube.com"></textarea>
+
+<div class="actions">
+<button class="primary" onclick="startCheck()">Check</button>
+<button class="secondary" onclick="clearAll()">Clear</button>
+<button class="secondary" onclick="downloadCSV()">CSV</button>
+</div>
+
+<div class="loader" id="loader">Checking...</div>
+
+<input id="search" placeholder="Search..." onkeyup="filterRows()">
+
+<div class="stats">
+<div class="card">
+<span>Total</span>
+<strong id="totalCount">0</strong>
+</div>
+
+<div class="card">
+<span>Success</span>
+<strong id="successCount">0</strong>
+</div>
+
+<div class="card">
+<span>Error</span>
+<strong id="errorCount">0</strong>
+</div>
+
+<div class="card">
+<span>Categories</span>
+<strong id="catCount">0</strong>
+</div>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Domain</th>
+<th>Status</th>
+<th>Category</th>
+</tr>
+</thead>
+
+<tbody id="results"></tbody>
+</table>
+
+</div>
+
+<div class="footer">
+Powered by Vercel API
+</div>
+
+</div>
+
+<script>
+let resultsData=[];
+
+function parseDomains(){
+return domains.value
+.split(/[\n,]+/)
+.map(x=>x.trim())
+.filter(Boolean);
+}
+
+async function checkDomain(domain){
+try{
+let res=await fetch('/api/check?domain='+encodeURIComponent(domain));
+let data=await res.json();
+
+return{
+domain:domain,
+status:data.status || "Error",
+category:data.category || "-"
+};
+
+}catch{
+return{
+domain:domain,
+status:"Error",
+category:"-"
+};
+}
+}
+
+async function startCheck(){
+
+let list=parseDomains();
+
+if(list.length===0){
+alert("Enter domains");
+return;
+}
+
+results.innerHTML="";
+resultsData=[];
+loader.style.display="block";
+
+for(let d of list){
+
+let row=await checkDomain(d);
+
+resultsData.push(row);
+
+results.innerHTML+=`
+<tr>
+<td class="domain">${row.domain}</td>
+<td class="${row.status==='Success'?'success':'error'}">${row.status}</td>
+<td><span class="badge">${row.category}</span></td>
+</tr>
+`;
+
+updateStats();
+
+await delay(250);
+}
+
+loader.style.display="none";
+}
+
+function updateStats(){
+
+totalCount.textContent=resultsData.length;
+
+successCount.textContent=resultsData.filter(x=>x.status==="Success").length;
+
+errorCount.textContent=resultsData.filter(x=>x.status==="Error").length;
+
+catCount.textContent=[...new Set(resultsData.map(x=>x.category))].length;
+}
+
+function clearAll(){
+domains.value="";
+search.value="";
+results.innerHTML="";
+resultsData=[];
+updateStats();
+}
+
+function filterRows(){
+
+let q=search.value.toLowerCase();
+
+let rows=document.querySelectorAll("#results tr");
+
+rows.forEach((row,i)=>{
+
+let r=resultsData[i];
+
+let txt=(r.domain+" "+r.status+" "+r.category).toLowerCase();
+
+row.style.display=txt.includes(q)?"":"none";
+
+});
+}
+
+function downloadCSV(){
+
+if(resultsData.length===0) return;
+
+let csv="Domain,Status,Category\n";
+
+resultsData.forEach(r=>{
+csv+=`${r.domain},${r.status},${r.category}\n`;
+});
+
+let blob=new Blob([csv],{type:'text/csv'});
+let url=URL.createObjectURL(blob);
+
+let a=document.createElement('a');
+a.href=url;
+a.download="domains.csv";
+a.click();
+
+URL.revokeObjectURL(url);
+}
+
+function delay(ms){
+return new Promise(r=>setTimeout(r,ms));
+}
+</script>
+
+</body>
+</html>
